@@ -24,33 +24,37 @@ import radixcore.core.RadixCore;
  */
 public final class SkinLoader
 {
-	public static void loadSkins()
-	{
-		try
+	static final String JAR_PATH_BEGIN = "jar:file:/";
+	
+    public static void loadSkins()
+    {
+        try
 		{
-			final File modFile = findModDataFile();
-
-			if (modFile.isFile())
+			String runLocation = MCA.class.getProtectionDomain().getCodeSource().getLocation().toString();
+			int jarEnd = runLocation.indexOf("!");
+			
+			if (runLocation.startsWith(JAR_PATH_BEGIN) && jarEnd >= 0)
 			{
-				loadSkinsFromFile(modFile);
+				String modJarPath = runLocation.substring(JAR_PATH_BEGIN.length(), jarEnd);	
+				loadSkinsFromJar(modJarPath);
+				
 			}
-
-			else
-			{
-				MCA.getLog().fatal(new FileNotFoundException("Unable to locate MCA assets!"));
-			}
-		}
-
-		catch (final IOException e)
-		{
-			MCA.getLog().fatal(e);
-		}
-		
-		catch (final NullPointerException e)
-		{
-			MCA.getLog().fatal(e);
-		}
-	}
+            else if (runLocation.endsWith(".class"))
+            {
+                String assetsFolder = runLocation.replace("/mca/core/MCA.class", "/assets/").replace("file:/", "");
+                loadSkinsFromFolder(assetsFolder);
+            }
+            else
+            {
+                loadSkinsFromJar(runLocation);
+            }
+        }
+        catch (IOException e)
+        {
+            MCA.getLog().error(e);
+            throw new RuntimeException("Failed to load MCA NPC skins.", e);
+        }
+    }
 
 	private static File findModDataFile() throws ZipException, IOException
 	{
